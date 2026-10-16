@@ -25,6 +25,20 @@ Open the URL it prints (usually **http://localhost:5173**) in your browser.
 
 Press `Ctrl + C` in the terminal to stop.
 
+## Already have the project? Get the latest first
+
+If you cloned this before, pull the newest changes before running, so you're not
+on an old version. From the repo root, copy and paste:
+
+```bash
+git pull
+cd config
+npm install
+npm run dev
+```
+
+`npm install` only does anything when dependencies changed — it's safe to run every time.
+
 ## Folders
 
 - **`src/`** — the app itself, from Figma Make.
