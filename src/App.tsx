@@ -1272,7 +1272,7 @@ export default function App() {
 
       {/* Canvases — main + mirror side by side */}
       <div className="flex-1 flex gap-3 min-h-0" style={{ margin: "0 40px 40px" }}>
-        <div className="flex-1 rounded-2xl overflow-hidden border border-gray-100 relative" style={{ background: canvasBackground }}>
+        <div className="flex-1 rounded-2xl overflow-hidden border-2 border-gray-300 relative" style={{ background: canvasBackground }}>
           <DecorationLayer decorations={decorations} />
           <canvas
             ref={canvasRef}
@@ -1319,7 +1319,7 @@ export default function App() {
             </div>
           )}
         </div>
-        <div className="flex-1 rounded-2xl overflow-hidden border border-gray-100 relative" style={{ background: mirrorBackground }}>
+        <div className="flex-1 rounded-2xl overflow-hidden border-2 border-gray-300 relative" style={{ background: mirrorBackground }}>
           <DecorationLayer decorations={decorations} />
           <canvas
             ref={mirrorRef}
