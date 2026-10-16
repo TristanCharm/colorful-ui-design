@@ -396,7 +396,10 @@ function ColoringTemplate({ id, preview = false }: { id: string; preview?: boole
 
   const strokeWidth = preview ? 3 : 4;
   const common = {
-    fill: "white",
+    // On the canvas the shapes must be hollow so painted color shows inside the
+    // outlines ("color inside the lines"). Thumbnails keep a white fill so they
+    // read clearly at small size.
+    fill: preview ? "white" : "none",
     stroke: "#374151",
     strokeWidth,
     strokeLinecap: "round" as const,
