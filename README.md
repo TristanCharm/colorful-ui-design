@@ -4,10 +4,12 @@ A colorful React app made in Figma Make.
 
 ## Run it
 
-Copy and paste this into your terminal:
+First time? Download the project, then start it. Copy and paste this into your terminal:
 
 ```bash
-cd config
+cd ~/Desktop
+git clone https://github.com/dstokes0523/colorful-ui-design.git
+cd colorful-ui-design/config
 npm install
 npm run dev
 ```
@@ -15,6 +17,14 @@ npm run dev
 Then open the URL it prints (usually **http://localhost:5173**) in your browser.
 
 That's it. Press `Ctrl + C` in the terminal to stop.
+
+**Already downloaded it?** Just open the project's `config` folder and run it:
+
+```bash
+cd config
+npm install
+npm run dev
+```
 
 ## Folders
 
