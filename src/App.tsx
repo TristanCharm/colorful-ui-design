@@ -637,7 +637,7 @@ export default function App() {
         const dx   = to.x - from.x;
         const dy   = to.y - from.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const gap  = style === "stars" ? brushPx * 4 : brushPx * dotLength * 1.5;
+        const gap  = style === "stars" ? brushPx * dotLength * 2 : brushPx * dotLength * 1.5;
         const steps = Math.max(1, Math.floor(dist / gap));
         ctx.fillStyle = active.hex;
         for (let i = 1; i <= steps; i++) {
@@ -1136,9 +1136,9 @@ export default function App() {
             )}
           </div>
 
-          {style === "dotted" && (
+          {(style === "dotted" || style === "stars") && (
             <label className="flex items-center gap-2 text-xs text-gray-400">
-              <span className="whitespace-nowrap">Gap</span>
+              <span className="whitespace-nowrap">Spacing</span>
               <input
                 type="range"
                 min={1}
