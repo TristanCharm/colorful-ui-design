@@ -1,6 +1,30 @@
 # Colorful UI Design
 
-A colorful React app made in Figma Make.
+A colorful React painting app made in Figma Make — built so people with
+disabilities can make art, including **painting with your eyes or head** using a
+regular webcam.
+
+## Paint with your eyes or head
+
+For users who can't use a mouse, the brush can be controlled by the webcam:
+
+1. Click **👁 WEBCAM** in the toolbar, then **Turn on webcam control** and allow
+   the camera when your browser asks.
+2. Pick a mode:
+   - **Head** — aim by turning/tilting your head. More accurate and stable; no
+     calibration needed.
+   - **Eyes** — look where you want the brush to go. Click **Calibrate** first
+     (look at each dot and hold still).
+3. **To draw, hold still** on a spot for about a second — that puts the "pen"
+   down. Hold still again to lift it. Adjust the hold time, sensitivity, and
+   smoothing in the panel.
+
+**Privacy:** all webcam processing happens on your own device using an in-browser
+model. Video never leaves your computer and nothing is uploaded or recorded.
+
+> The first `npm install` downloads the small on-device tracking model
+> automatically. If webcam control says it can't load the model, run
+> `npm run setup:mediapipe` in the `config` folder and reload.
 
 ## Run it
 
