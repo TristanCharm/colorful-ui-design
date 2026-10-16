@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Orelega+One&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Orelega One', serif;
+}
+
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #111111;
+  --color-muted: #f5f5f5;
+  --color-muted-fg: #888888;
+  --color-border: #e8e8e8;
+}
+
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes pulse-shape {
+  0%, 100% { opacity: 0.15; }
+  50%       { opacity: 0.55; }
+}
+
+.bg-shape {
+  animation: pulse-shape 3s ease-in-out infinite;
+}
+.bg-shape-1  { animation-delay: 0s; }
+.bg-shape-2  { animation-delay: 0.3s; }
+.bg-shape-3  { animation-delay: 0.6s; }
+.bg-shape-4  { animation-delay: 0.9s; }
+.bg-shape-5  { animation-delay: 1.2s; }
+.bg-shape-6  { animation-delay: 1.5s; }
+.bg-shape-7  { animation-delay: 1.8s; }
+.bg-shape-8  { animation-delay: 2.1s; }
+.bg-shape-9  { animation-delay: 2.4s; }
+.bg-shape-10 { animation-delay: 2.7s; }
+.bg-shape-11 { animation-delay: 0.15s; }
+.bg-shape-12 { animation-delay: 0.45s; }
+.bg-shape-13 { animation-delay: 0.75s; }
+.bg-shape-14 { animation-delay: 1.05s; }
+.bg-shape-15 { animation-delay: 1.35s; }
+.bg-shape-16 { animation-delay: 1.65s; }
+.bg-shape-17 { animation-delay: 1.95s; }
+.bg-shape-18 { animation-delay: 2.25s; }
+.bg-shape-19 { animation-delay: 2.55s; }
+.bg-shape-20 { animation-delay: 2.85s; }
