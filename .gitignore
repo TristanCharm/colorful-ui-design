@@ -4,6 +4,9 @@ node_modules/
 # build output
 dist/
 
+# on-device face-tracking assets (recreated by npm install via scripts/setup-mediapipe.mjs)
+config/public/mediapipe/
+
 # logs
 *.log
 npm-debug.log*

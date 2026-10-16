@@ -1,5 +1,22 @@
 import { useState, useRef, useEffect, useCallback, Component } from "react";
 import type { ReactNode } from "react";
+import { AccessibilityPanel } from "./tracking/AccessibilityPanel";
+import { GazeCursor, type GazeCursorHandle } from "./tracking/GazeCursor";
+import { CalibrationOverlay } from "./tracking/CalibrationOverlay";
+import { useFaceTracker } from "./tracking/useFaceTracker";
+import { useCalibration } from "./tracking/useCalibration";
+import { createDwellController } from "./tracking/dwell";
+import {
+  mapHead,
+  mapEye,
+  clamp01Point,
+  PointSmoother,
+  IDENTITY_AFFINE,
+  type Affine,
+  type ControlMode,
+  type FaceFeatures,
+  type HeadMapping,
+} from "./tracking/pointerMapping";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
   state = { crashed: false };
@@ -502,7 +519,43 @@ export default function App() {
   const idleTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const decorationId = useRef(0);
 
+  // --- Webcam eye/head control (accessibility) ---
+  const [webcamEnabled, setWebcamEnabled] = useState(false);
+  const [controlMode, setControlMode] = useState<ControlMode>("head");
+  const [sensitivity, setSensitivity] = useState(0.5);
+  const [smoothing, setSmoothing] = useState(0.6);
+  const [dwellMs, setDwellMs] = useState(1000);
+  const [showPreview, setShowPreview] = useState(false);
+  const [calibrated, setCalibrated] = useState(false);
+
+  const canvasAreaRef = useRef<HTMLDivElement>(null);
+  const gazeCursorRef = useRef<GazeCursorHandle>(null);
+  const headMappingRef = useRef<HeadMapping>({ neutral: { yaw: 0, pitch: 0 }, sensitivity: 0.5 });
+  const eyeAffineRef = useRef<Affine>(IDENTITY_AFFINE);
+  const smootherRef = useRef(new PointSmoother(0.6));
+  const dwellRef = useRef(createDwellController({ radius: 40, dwellMs: 1000 }));
+  const penDownRef = useRef(false);
+  const controlModeRef = useRef<ControlMode>("head");
+  const webcamActiveRef = useRef(false);
+  const handleFrameRef = useRef<(f: FaceFeatures, ts: number) => void>(() => {});
+
+  const tracker = useFaceTracker({ onFrame: (f, ts) => handleFrameRef.current(f, ts) });
+  const calibration = useCalibration((result) => {
+    if (result.mode === "eye" && result.affine) eyeAffineRef.current = result.affine;
+    if (result.mode === "head" && result.neutral)
+      headMappingRef.current = { ...headMappingRef.current, neutral: result.neutral };
+    setCalibrated(true);
+  });
+
+  useEffect(() => { controlModeRef.current = controlMode; }, [controlMode]);
+  useEffect(() => { headMappingRef.current = { ...headMappingRef.current, sensitivity }; }, [sensitivity]);
+  useEffect(() => { smootherRef.current = new PointSmoother(smoothing); }, [smoothing]);
+  useEffect(() => { dwellRef.current = createDwellController({ radius: 40, dwellMs }); }, [dwellMs]);
+  useEffect(() => { webcamActiveRef.current = webcamEnabled && tracker.status === "running"; }, [webcamEnabled, tracker.status]);
+  useEffect(() => { if (tracker.status === "error") setWebcamEnabled(false); }, [tracker.status]);
+
   const resetIdleTimer = () => {
+    if (webcamActiveRef.current) return; // webcam uses dwell, not the mouse idle timeout
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
       painting.current = false;
@@ -617,11 +670,8 @@ export default function App() {
     } catch { /* ignore */ }
   }, [active.hex, brushPx, style, dotLength, syncMirror, erasing]);
 
-  const startPaint = (e: React.MouseEvent | React.TouchEvent) => {
+  const startPaintAt = (pos: { x: number; y: number }) => {
     try {
-      if (!hasStarted || !paintEnabled) return;
-      const pos = getPos(e);
-      if (!pos) return;
       painting.current = true;
       lastPos.current  = pos;
       resetIdleTimer();
@@ -654,12 +704,14 @@ export default function App() {
     } catch { /* ignore */ }
   };
 
-  const movePaint = (e: React.MouseEvent | React.TouchEvent) => {
+  const startPaint = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!hasStarted || !paintEnabled) return;
+    const pos = getPos(e);
+    if (pos) startPaintAt(pos);
+  };
+
+  const movePaintAt = (to: { x: number; y: number }) => {
     try {
-      const isTouch = "touches" in e;
-      if (!hasStarted || !paintEnabled || (isTouch && !painting.current)) return;
-      const to = getPos(e);
-      if (!to) return;
       resetIdleTimer();
       if (!lastPos.current) {
         lastPos.current = to;
@@ -674,6 +726,13 @@ export default function App() {
     } catch { /* ignore */ }
   };
 
+  const movePaint = (e: React.MouseEvent | React.TouchEvent) => {
+    const isTouch = "touches" in e;
+    if (!hasStarted || !paintEnabled || (isTouch && !painting.current)) return;
+    const to = getPos(e);
+    if (to) movePaintAt(to);
+  };
+
   const stopPaint = () => {
     if (idleTimer.current) {
       clearTimeout(idleTimer.current);
@@ -681,6 +740,82 @@ export default function App() {
     }
     painting.current = false;
     lastPos.current  = null;
+  };
+
+  // Per-frame webcam handler: map features -> canvas point, run dwell, draw.
+  const handleFrame = (features: FaceFeatures, ts: number) => {
+    if (calibration.view.active) {
+      calibration.feed(features, ts);
+      gazeCursorRef.current?.setCursor({ x: 0, y: 0, progress: 0, penDown: false, visible: false });
+      return;
+    }
+    if (!hasStarted || !webcamActiveRef.current) return;
+    const canvas = canvasRef.current;
+    const area = canvasAreaRef.current;
+    if (!canvas || !area) return;
+    const rect = canvas.getBoundingClientRect();
+    const areaRect = area.getBoundingClientRect();
+    const norm = clamp01Point(
+      controlModeRef.current === "eye"
+        ? mapEye(features, eyeAffineRef.current)
+        : mapHead(features, headMappingRef.current),
+    );
+    const sm = smootherRef.current.filter({ x: norm.x * rect.width, y: norm.y * rect.height }, ts);
+    const tick = dwellRef.current.update(sm, ts);
+    if (tick.fired) {
+      if (!penDownRef.current) {
+        penDownRef.current = true;
+        startPaintAt(sm);
+      } else {
+        penDownRef.current = false;
+        stopPaint();
+      }
+    }
+    if (penDownRef.current) movePaintAt(sm);
+    gazeCursorRef.current?.setCursor({
+      x: rect.left - areaRect.left + sm.x,
+      y: rect.top - areaRect.top + sm.y,
+      progress: tick.progress,
+      penDown: penDownRef.current,
+      visible: true,
+    });
+  };
+  handleFrameRef.current = handleFrame;
+
+  const toggleWebcam = () => {
+    if (webcamEnabled) {
+      setWebcamEnabled(false);
+      tracker.stop();
+      if (penDownRef.current) {
+        penDownRef.current = false;
+        stopPaint();
+      }
+      dwellRef.current.reset();
+      gazeCursorRef.current?.setCursor({ x: 0, y: 0, progress: 0, penDown: false, visible: false });
+    } else {
+      setWebcamEnabled(true);
+      setHasStarted(true);
+      setPaintEnabled(true);
+      void tracker.start();
+    }
+  };
+
+  const startCalibration = () => {
+    if (tracker.status !== "running") return;
+    if (penDownRef.current) {
+      penDownRef.current = false;
+      stopPaint();
+    }
+    dwellRef.current.reset();
+    calibration.start(controlMode);
+  };
+
+  const changeControlMode = (m: ControlMode) => {
+    setControlMode(m);
+    controlModeRef.current = m;
+    setCalibrated(false);
+    dwellRef.current.reset();
+    smootherRef.current.reset();
   };
 
 
@@ -846,6 +981,26 @@ export default function App() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-3">
+
+        {/* Webcam eye/head control (accessibility) */}
+        <AccessibilityPanel
+          enabled={webcamEnabled}
+          onToggleEnabled={toggleWebcam}
+          status={tracker.status}
+          error={tracker.error}
+          mode={controlMode}
+          onModeChange={changeControlMode}
+          sensitivity={sensitivity}
+          onSensitivity={setSensitivity}
+          smoothing={smoothing}
+          onSmoothing={setSmoothing}
+          dwellMs={dwellMs}
+          onDwellMs={setDwellMs}
+          showPreview={showPreview}
+          onTogglePreview={() => setShowPreview((s) => !s)}
+          onCalibrate={startCalibration}
+          calibrated={calibrated}
+        />
 
         {/* Color dropdown */}
         <div
@@ -1275,7 +1430,7 @@ export default function App() {
 
       {/* Canvases — main + mirror side by side */}
       <div className="flex-1 flex gap-3 min-h-0" style={{ margin: "0 40px 40px" }}>
-        <div className="flex-1 rounded-2xl overflow-hidden border-2 border-gray-300 relative" style={{ background: canvasBackground }}>
+        <div ref={canvasAreaRef} className="flex-1 rounded-2xl overflow-hidden border-2 border-gray-300 relative" style={{ background: canvasBackground }}>
           <DecorationLayer decorations={decorations} />
           <canvas
             ref={canvasRef}
@@ -1321,6 +1476,8 @@ export default function App() {
               </HoverOption>
             </div>
           )}
+          <GazeCursor ref={gazeCursorRef} />
+          <CalibrationOverlay view={calibration.view} mode={controlMode} onCancel={calibration.cancel} />
         </div>
         <div className="flex-1 rounded-2xl overflow-hidden border-2 border-gray-300 relative" style={{ background: mirrorBackground }}>
           <DecorationLayer decorations={decorations} />
@@ -1334,6 +1491,32 @@ export default function App() {
         </div>
       </div>
       </div>
+
+      {/* Webcam video feed for face tracking — hidden off-screen, or a small mirrored preview when enabled. */}
+      <video
+        ref={tracker.videoRef}
+        muted
+        playsInline
+        aria-hidden="true"
+        style={
+          showPreview && webcamEnabled
+            ? {
+                position: "fixed",
+                bottom: 16,
+                left: 16,
+                width: 160,
+                height: 120,
+                objectFit: "cover",
+                transform: "scaleX(-1)",
+                borderRadius: 12,
+                border: "2px solid #6366f1",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                zIndex: 60,
+                background: "#000",
+              }
+            : { position: "fixed", width: 1, height: 1, opacity: 0, pointerEvents: "none", left: -10, top: -10 }
+        }
+      />
 
       {customOpen && (
         <div
