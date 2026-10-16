@@ -413,7 +413,10 @@ function ColoringTemplate({ id, preview = false }: { id: string; preview?: boole
 
   const strokeWidth = preview ? 3 : 4;
   const common = {
-    fill: "white",
+    // On the canvas the shapes must be hollow so painted color shows inside the
+    // outlines ("color inside the lines"). Thumbnails keep a white fill so they
+    // read clearly at small size.
+    fill: preview ? "white" : "none",
     stroke: "#374151",
     strokeWidth,
     strokeLinecap: "round" as const,
@@ -1278,7 +1281,7 @@ export default function App() {
               <circle cx="13" cy="10" r="2" fill="white" stroke="currentColor" strokeWidth="1.5" />
               <circle cx="7" cy="15" r="2" fill="white" stroke="currentColor" strokeWidth="1.5" />
             </svg>
-            <span className="text-[10px] font-bold leading-tight tracking-wide">CUSTOM<br />BACKGROUND</span>
+            <span className="text-[10px] font-bold leading-tight tracking-wide">CANVAS<br />BACKGROUND</span>
           </HoverOption>
 
           <div className="relative flex-shrink-0">
@@ -1296,12 +1299,12 @@ export default function App() {
                 className="h-6 w-6 flex-shrink-0 rounded-md border-2 border-white shadow-sm ring-1 ring-amber-300"
                 style={{ background: mirrorBackground }}
               />
-              <span className="text-[10px] font-bold leading-tight tracking-wide">CANVAS<br />BACKGROUND</span>
+              <span className="text-[10px] font-bold leading-tight tracking-wide">MIRROR<br />BACKGROUND</span>
             </HoverOption>
             {mirrorBackgroundOpen && (
               <div className="absolute right-0 top-full z-40 mt-1 w-64 rounded-xl border border-amber-100 bg-white p-3 shadow-xl">
-                <p className="text-xs font-bold tracking-wide text-slate-700">Non-drawable canvas background</p>
-                <p className="mt-1 text-[11px] text-slate-400">Choose a background for the mirror canvas.</p>
+                <p className="text-xs font-bold tracking-wide text-slate-700">Mirror background</p>
+                <p className="mt-1 text-[11px] text-slate-400">Background color for the mirror (right-hand) canvas.</p>
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {BACKGROUND_COLORS.map(background => (
                     <HoverOption
@@ -1326,7 +1329,7 @@ export default function App() {
                     value={mirrorBackground}
                     onChange={event => setMirrorBackground(event.target.value.toUpperCase())}
                     className="h-8 w-10 cursor-pointer border-0 bg-transparent p-0"
-                    aria-label="Custom non-drawable canvas background color"
+                    aria-label="Custom mirror background color"
                   />
                 </label>
               </div>
@@ -1427,7 +1430,7 @@ export default function App() {
 
       {/* Canvases — main + mirror side by side */}
       <div className="flex-1 flex gap-3 min-h-0" style={{ margin: "0 40px 40px" }}>
-        <div ref={canvasAreaRef} className="flex-1 rounded-2xl overflow-hidden border border-gray-100 relative" style={{ background: canvasBackground }}>
+        <div ref={canvasAreaRef} className="flex-1 rounded-2xl overflow-hidden border-2 border-gray-300 relative" style={{ background: canvasBackground }}>
           <DecorationLayer decorations={decorations} />
           <canvas
             ref={canvasRef}
@@ -1476,7 +1479,7 @@ export default function App() {
           <GazeCursor ref={gazeCursorRef} />
           <CalibrationOverlay view={calibration.view} mode={controlMode} onCancel={calibration.cancel} />
         </div>
-        <div className="flex-1 rounded-2xl overflow-hidden border border-gray-100 relative" style={{ background: mirrorBackground }}>
+        <div className="flex-1 rounded-2xl overflow-hidden border-2 border-gray-300 relative" style={{ background: mirrorBackground }}>
           <DecorationLayer decorations={decorations} />
           <canvas
             ref={mirrorRef}
@@ -1531,7 +1534,7 @@ export default function App() {
               <div>
                 <p className="text-xs font-bold tracking-[0.2em] text-sky-600">CUSTOMIZE</p>
                 <h2 id="background-customizer-title" className="mt-1 text-2xl font-bold text-slate-800">
-                  How would you like to customize the background?
+                  How would you like to customize the canvas?
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">Choose a canvas color and decide whether to show the colorful shapes.</p>
               </div>
