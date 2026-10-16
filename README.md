@@ -4,21 +4,16 @@ A colorful React app made in Figma Make.
 
 ## Run it
 
-First time? Download the project, then start it. Copy and paste this into your terminal:
+You'll need [Node.js](https://nodejs.org) installed.
+
+Clone the repo and open it:
 
 ```bash
-cd ~/Desktop
 git clone https://github.com/dstokes0523/colorful-ui-design.git
-cd colorful-ui-design/config
-npm install
-npm run dev
+cd colorful-ui-design
 ```
 
-Then open the URL it prints (usually **http://localhost:5173**) in your browser.
-
-That's it. Press `Ctrl + C` in the terminal to stop.
-
-**Already downloaded it?** Just open the project's `config` folder and run it:
+Then, from the repo root, start it:
 
 ```bash
 cd config
@@ -26,16 +21,20 @@ npm install
 npm run dev
 ```
 
+Open the URL it prints (usually **http://localhost:5173**) in your browser.
+
+Press `Ctrl + C` in the terminal to stop.
+
 ## Folders
 
-- **`src/`** — the app itself, exactly as Figma Make made it.
-- **`config/`** — the extra files added to make it run (you don't need to touch these).
+- **`src/`** — the app itself, from Figma Make.
+- **`config/`** — the files added to make it build and run (you don't need to touch these).
 
 ## Other commands
 
 Run these from the `config` folder too:
 
 ```bash
-npm run build     # make a production build (output goes to dist/)
-npm run preview   # view that production build
+npm run build     # production build (output goes to dist/)
+npm run preview   # preview the production build
 ```
