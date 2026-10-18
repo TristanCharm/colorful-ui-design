@@ -49,12 +49,13 @@ Open the URL it prints (usually **http://localhost:5173**) in your browser.
 
 Press `Ctrl + C` in the terminal to stop.
 
-## Already have the project? Get the latest first
+## Already have the project? Get the latest first (TRISTAN)
 
 If you cloned this before, pull the newest changes before running, so you're not
-on an old version. From the repo root, copy and paste:
+on an old version. From the repo root, copy and paste: 
 
-```bash
+```bash 
+cd colorful-ui-design
 git pull
 cd config
 npm install
